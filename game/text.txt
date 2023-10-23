@@ -1,0 +1,25 @@
+           ## Ubicar lanchas
+                    # if not tablero.is_in_barcos(casilla) and len(tablero.barcos_ubicados) < 6:
+                    #     if len(lanchas) < 1 and not tablero.is_alround(casilla, submarinos) and not tablero.is_alround(casilla, buques):
+                    #         lanchas.append(casilla)
+                    #         tablero.barcos_ubicados.add(casilla)
+                    #     elif len(submarinos) < 2 and not tablero.is_alround(casilla, lanchas) and not tablero.is_alround(casilla, buques):
+                    #         submarinos.append(casilla)
+                    #         tablero.barcos_ubicados.add(casilla)
+                    #     elif len(buques) < 3 and not tablero.is_alround(casilla, lanchas) and not tablero.is_alround(casilla, submarinos):
+                    #         buques.append(casilla)
+                    #         tablero.barcos_ubicados.add(casilla)
+                    # elif tablero.is_in_barcos(casilla):
+                    #     if casilla in lanchas:
+                    #         lanchas.clear()
+                    #     elif casilla in submarinos:
+                    #         submarinos.clear()
+                    #     elif casilla in buques:
+                    #         buques.clear()
+                    #     tablero.barcos_ubicados.remove(casilla)
+                    # # sendMessage(client_socket, action="a", position=[fila, columna])
+                    # print("--------------------------------")
+                    # print(lanchas)
+                    # print(submarinos)
+                    # print(buques)
+                    # print(fila, columna)
