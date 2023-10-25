@@ -17,10 +17,13 @@ ESPACIO = 10
 BUFFER_SIZE = 1024
 
 #MiIP
-IP = "25.48.213.201"
+# IP = "25.48.213.201"
 
 #PipeIP
 # IP = "25.48.102.203"
 #BenjaIp
 # IP = "25.48.67.84"
+#LlancaIP
+IP = "25.3.226.205"
+
 PORT = 20001

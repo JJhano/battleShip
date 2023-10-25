@@ -12,6 +12,9 @@ class Player:
         if self.board[x][y] == 0:
             self.board[x][y] = 1
 
+    def printMatrix(self):
+        for row in self.board:
+            print(" ".join(map(str, row)))
     def attackBoard(self, x, y):
         # if sessions[idSession].player1.ip == adress[0]:
         if self.board[x][y] == 1: # Casilla con barco

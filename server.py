@@ -3,7 +3,7 @@ import json
 from clases.GameSession import GameSession
 import random as r
 from config import BUFFER_SIZE, IP, PORT, SIZE
-
+import time
 
 PLAYERS = []
 SESSIONS = []
@@ -31,18 +31,19 @@ def sendMessage(UDPServerSocket, address, action ,status,position=None):
         "status": status,
         "position": position
     }
-    print("Mensaje enviado: ", responseData)
+    print("Mensaje enviado: ", responseData, address)
     UDPServerSocket.sendto(json.dumps(responseData).encode(), address)
 
     
 
 def selectionMode(UDPServerSocket, received_data, address):
     global SESSION_COUNT
-    PLAYERS.append(address)
+    if(address not in PLAYERS):
+        PLAYERS.append(address)
     selectModeGame = received_data["bot"]
     if selectModeGame == 1:
         gameSession = GameSession(SESSION_COUNT, address, ("1","1"),1)
-        SESSION_COUNT +=1
+        SESSION_COUNT += 1
         SESSIONS.append(gameSession)
         print("Empieza partida contra bot")
         gameSession.player2.randomBoard()
@@ -63,17 +64,20 @@ def selectionMode(UDPServerSocket, received_data, address):
         #     sendMessage(UDPServerSocket, PLAYERS[0],"s",2)
 
 def takeAction(UDPServerSocket):
-    global SESSION_COUNT
+    global SESSION_COUNT, SESSIONS
     bytesAddressPair = UDPServerSocket.recvfrom(BUFFER_SIZE)
     message = bytesAddressPair[0]
     address = bytesAddressPair[1]
     received_data = json.loads(message.decode())
     print(received_data)
     action = received_data["action"]
-    print(SESSIONS)
+    # print(SESSIONS)
     if action == "c":
+        print("------------------------------------------------------------")
+        print("Player connected", address)
         sendMessage(UDPServerSocket, address,"c",1)
     elif action == "s":
+        print("Player selected mode", address)
         selectionMode(UDPServerSocket, received_data, address)
 
     elif action == "a":
@@ -90,7 +94,10 @@ def takeAction(UDPServerSocket):
                 hit = 0
                 if SESSIONS[idSession].player1.board[x][y] == 2:
                     hit = 1
+                # time.sleep(10)
                 sendMessage(UDPServerSocket, SESSIONS[idSession].player1.ip,"a",hit, [x_bot, y_bot])
+                # time.sleep(10)
+                sendMessage(UDPServerSocket, SESSIONS[idSession].player1.ip,"t",1)
         else:
             if SESSIONS[idSession].player1.ip == address:
                 hit = SESSIONS[idSession].player2.attackBoard(x, y)
@@ -106,26 +113,26 @@ def takeAction(UDPServerSocket):
                 sendMessage(UDPServerSocket, SESSIONS[idSession].player1.ip, "t",1)
                 sendMessage(UDPServerSocket, SESSIONS[idSession].player2.ip, "t",0)
 
-            if SESSIONS[idSession].player1.lost() and not session.bot:
-                endGame(UDPServerSocket, SESSIONS[idSession].player1.ip, SESSIONS[idSession].player2.ip)
+        if SESSIONS[idSession].player1.lost() and not session.bot:
+            endGame(UDPServerSocket, SESSIONS[idSession].player1.ip, SESSIONS[idSession].player2.ip)
 
-            elif SESSIONS[idSession].player2.lost() and not session.bot:
-                endGame(UDPServerSocket, SESSIONS[idSession].player2.ip, SESSIONS[idSession].player1.ip)
-            elif SESSIONS[idSession].player1.lost() and session.bot:
-                sendMessage(UDPServerSocket, address, "l", 1)
-            elif SESSIONS[idSession].player2.lost() and session.bot:
-                sendMessage(UDPServerSocket, address, "w", 1)
+        elif SESSIONS[idSession].player2.lost() and not session.bot:
+            endGame(UDPServerSocket, SESSIONS[idSession].player2.ip, SESSIONS[idSession].player1.ip)
+        elif SESSIONS[idSession].player1.lost() and session.bot:
+            sendMessage(UDPServerSocket, address, "l", 1)
+        elif SESSIONS[idSession].player2.lost() and session.bot:
+            sendMessage(UDPServerSocket, address, "w", 1)
     elif action == "b":
         idSession, boardFounded, session = foundSession(address[0])
         ships = received_data["ships"]
-        print(ships)
+        print("SHIPS,", ships)
         for i in ships:
             if i == "p":
                 boardFounded[ships[i][0]][ships[i][1]] = 1
             elif i == "b":        
                 if ships[i][2] == 0:
-                    print(ships[i][0], ships[i][1])
-                    print(ships[i][0] + 1, ships[i][1])
+                    # print(ships[i][0], ships[i][1])
+                    # print(ships[i][0] + 1, ships[i][1])
                     boardFounded[ships[i][0]][ships[i][1]] = 1
                     boardFounded[ships[i][0] + 1][ships[i][1]] = 1
                 else:
@@ -141,16 +148,20 @@ def takeAction(UDPServerSocket):
                     boardFounded[ships[i][0]][ships[i][1] + 1] = 1
                     boardFounded[ships[i][0]][ships[i][1] + 2] = 1
         if SESSIONS[idSession].player1.ip == address:
+            SESSIONS[idSession].player1.printMatrix()
             SESSIONS[idSession].player1.board = boardFounded
-            sendMessage(UDPServerSocket, SESSIONS[idSession].player1.ip, "b",1)
             SESSIONS[idSession].player1.start = True
+            sendMessage(UDPServerSocket, SESSIONS[idSession].player1.ip, "b",1)
             if session.bot == 1:
+                time.sleep(2)
+                print("Enviar msj a player para empezar partida")
                 sendMessage(UDPServerSocket, SESSIONS[idSession].player1.ip, "t",1)
                 # SESSIONS[idSession].player2.start = True
         elif(not session.bot):
             SESSIONS[idSession].player2.board = boardFounded
             sendMessage(UDPServerSocket, SESSIONS[idSession].player2.ip, "b", 1)
             SESSIONS[idSession].player2.start = True
+            SESSIONS[idSession].player2.printMatrix()
         
         if (SESSIONS[idSession].player1.start and SESSIONS[idSession].player2.start):
             sendMessage(UDPServerSocket, SESSIONS[idSession].player1.ip, "t",1)
@@ -171,11 +182,12 @@ def takeAction(UDPServerSocket):
             sendMessage(UDPServerSocket, session.player1.ip, "d", 1)
   
         SESSIONS.remove(SESSIONS[idSession])
+        SESSION_COUNT -= 1
 
 
 
 def main():
-    msgFromServer = "Hello UDP Client"
+    # msgFromServer = "Hello UDP Client"
     # bytesToSend = str.encode(msgFromServer)
 
     UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
