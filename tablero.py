@@ -201,14 +201,13 @@ def randomBoardSets():
                     if(i == 0):      
                         # print("entro i, tamano:", tamano)             
                         if(tamano == 3):
-                            ships["s"] = [x + i, y, 1]
+                            ships["s"] = [x, y + i, 1]
                         elif(tamano == 2):
-                            ships["b"] = [x + i, y, 1]
+                            ships["b"] = [x, y + i, 1]
                         else:
-                            ships["p"] = [x + i, y, 1]
+                            ships["p"] = [x, y+i, 1]
                     # positions_set.add((x + i, y))
-                    barcos_ubicados.add((x + i, y))
-
+                    barcos_ubicados.add((x, y+i))
             else:
                 if (x, y) in barcos_ubicados:
                     continue
@@ -225,13 +224,13 @@ def randomBoardSets():
                 for i in range(tamano):
                     if(i == 0):
                         if(tamano == 3):
-                            ships["s"] = [x, y + i, 0]
+                            ships["s"] = [x + i, y, 0]
                         elif(tamano == 2):
-                            ships["b"] =[x, y + i, 0]
+                            ships["b"] =[x + i, y, 0]
                         else:
-                            ships["p"]=  [x, y + i, 0]
+                            ships["p"]=  [x+ i, y , 0]
                     # positions_set.add((x, y + i))
-                    barcos_ubicados.add((x, y + i))
+                    barcos_ubicados.add((x+ i, y ))
 
             break
     return ships
@@ -315,37 +314,3 @@ def draw_board_with_title_enemy(surface, title, x_offset, y_offset):
                 pygame.draw.line(
                     surface, BLACK, (x + TAMAÑO_CUADROS, y), (x, y + TAMAÑO_CUADROS), 2
                 )
-
-def randomBoard():
-    for tamano in [1, 2, 3]:
-        while True:
-            fila = r.randint(0, SIZE - 1)
-            columna = r.randint(0, SIZE - 1)
-            direccion = r.choice(['horizontal', 'vertical'])
-
-            if direccion == 'horizontal':
-                if (columna + tamano - 1) >= SIZE:
-                    continue
-                ocupado = False
-                for c in range(columna, columna + tamano):
-                    if board[fila][c] == 1:
-                        ocupado = True
-                        break
-                if ocupado:
-                    continue
-                for c in range(columna, columna + tamano):
-                    board[fila][c] = 1
-                break
-            else:
-                if (fila + tamano - 1) >= SIZE:
-                    continue
-                ocupado = False
-                for f in range(fila, fila + tamano):
-                    if board[f][columna] == 1:
-                        ocupado = True
-                        break
-                if ocupado:
-                    continue
-                for f in range(fila, fila + tamano):
-                    board[f][columna] = 1
-                break

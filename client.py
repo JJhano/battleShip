@@ -18,6 +18,7 @@ gameover = False
 win = False
 # waitingPlayer = True
 multiplayer = False
+
 def sendMessage(ClientSocket, action ,bot = None, position=[], ships = {}):
     responseData = {
         "action": action,
@@ -29,8 +30,8 @@ def sendMessage(ClientSocket, action ,bot = None, position=[], ships = {}):
     ClientSocket.sendto(json.dumps(responseData).encode(), SERVER_ADDRESS)
 
 def recvMessage(ClientSocket, timeout = 2):
-    ClientSocket.settimeout(timeout)
     try: 
+        ClientSocket.settimeout(timeout)
         response, _ = ClientSocket.recvfrom(BUFFER_SIZE)
         response_data = json.loads(response.decode())
         print("respuesta:", response_data)
@@ -76,7 +77,7 @@ def main_menu():
         pygame.display.flip()
 
 
-def gameOver(client_socket, msg):
+def gameOver(client_socket, msg, thread):
     
     # Mostrar pantalla de conexión
     font = pygame.font.Font(None, 36)
@@ -88,8 +89,11 @@ def gameOver(client_socket, msg):
     screen.fill(BLACK)
     screen.blit(text, text_rect)
     pygame.display.flip()
-    time.sleep(3)
+    thread.join()
+    time.sleep(2)
+    pygame.quit()
     disconnect(client_socket)
+    sys.exit()
 
 def showText(msg, x, y):
     font = pygame.font.Font(None, 36)
@@ -147,7 +151,7 @@ def waitingPlayer(client_socket, msg):
 
         except socket.error as e:
             connecting = True
-            print("Error", e)
+            # print("Error", e)
 
 def createButton(posicion, texto):
         button = pygame.Rect(posicion, 600, 200, 50)
@@ -210,9 +214,9 @@ def puttingShips(client_socket):
 
 def takeAction(client_socket):
     global gameover, myturn, win
-    msg = recvMessage(client_socket, 0)
+    msg = recvMessage(client_socket, 1)
     if msg != None:
-        if(msg["action"] == "a" and msg["position"] != None):
+        if(msg["action"] == "a" and msg["position"] != [] ):
             tablero.click_enemigo.add((msg["position"][0], msg["position"][1]))
             if(msg["status"] == 1):
                 print("Impacto en nuestro barco!")
@@ -244,9 +248,11 @@ def takeMessages(client_socket):
                         print("It isnt my turn")
                         # ACTIONS.remove(msg)
                         myturn = False
-                elif(msg["action"] == "a" and msg["position"] != None):
+                # elif(msg["action"] == "a" and msg["position"] != []):
+                elif(msg["action"] == "a" and msg["position"] != [] and not myturn):
                     tablero.click_enemigo.add((msg["position"][0], msg["position"][1]))
                     if(msg["status"] == 1):
+                        # tablero.barcos_enemigos.add((msg["status"][0], msg["status"][1]))
                         print("Impacto en nuestro barco!")
                     # ACTIONS.remove(msg)
                 elif msg["action"] == "l"  or msg["action"] == "d":
@@ -254,46 +260,15 @@ def takeMessages(client_socket):
                 elif(msg["action"] == "w"):
                     gameover = True
                     win = True
-                else:
-                    ACTIONS.append(msg)
-                print("Mensajes recibidos =", len(ACTIONS))
-                print("ACTIONS:\n",ACTIONS)
+                elif(msg["action"] != "b"):
+                        ACTIONS.append(msg)
+                # print("Mensajes recibidos =", len(ACTIONS))
+                # print("ACTIONS:\n",ACTIONS)
 
         except NameError as e:
             print("FAIL TH2", e)
         # return msg
-#Thread 2
-# def takeActions(client_socket):
-#     global gameover, win, myturn
-#     print("Th2 working")
-#     while True:
-#         try:
-#             if(len(ACTIONS) > 0):
-#                 msg = ACTIONS[0]
-#                 # if msg["action"] == "t" and msg["status"] == 1:
-#                 #     print("Its my turn")
-#                 #     ACTIONS.remove(msg)
-#                 #     myturn = True
-#                 # elif msg["action"] == "t" and msg["status"] == 0:
-#                 #     print("It isnt my turn")
-#                 #     ACTIONS.remove(msg)
-#                 #     myturn = False
-#                 if msg["action"] == "l"  or msg["action"] == "d":
-#                     ACTIONS.remove(msg)
-#                     gameover = True
-#                 elif(msg["action"] == "w"):
-#                     gameover = True
-#                     win = True
-#                     ACTIONS.remove(msg)
-#                 # elif(msg["action"] == "a" and msg["position"] != None):
-#                 #     tablero.click_enemigo.add((msg["position"][0], msg["position"][1]))
-#                 #     if(msg["status"] == 1):
-#                 #         print("Impacto en nuestro barco!")
-#                 #     ACTIONS.remove(msg)
-#         except KeyError as e:
 #             print("FAIL TH2", e)
-
-
 
 def main():
     global ACTIONS, multiplayer, gameover, myturn, win
@@ -303,7 +278,6 @@ def main():
     thread = th.Thread(target = takeMessages, args = (client_socket,), daemon = True)
     thread.start()
     
-
     while True:
         unselected = True
         ## Main menu select mode
@@ -360,11 +334,15 @@ def main():
                             sendMessage(client_socket, action= "a", position=[fila, columna])
                             waitThreadAction()
                             msg = ACTIONS[0]
-                            print("msg if", msg)
+                            print("msg if ACTION[0]", msg)
                             ACTIONS.remove(ACTIONS[0])
                             # msg = takeAction(client_socket)
-                            if msg["action"] == "a" and msg["status"] == 1 and msg["position"] == None:
+                            # if msg["action"] == "a" and msg["status"] == 1 and msg["position"] == []: #real
+                            if msg["action"] == "a" and msg["status"] == 1:
+                                print("---------------------------------")
+                                print("MSGIF: msg", msg)
                                 print("Impacto tablero enemigo")
+                                print("CASILLA", casilla)
                                 tablero.barcos_enemigo.add(casilla)
                                 tablero.casillas_clickeadas.add(casilla)
                             else:
@@ -385,11 +363,27 @@ def main():
             start_game_button_x = disconnect_button_x + 220
             createButton(disconnect_button_x, "Desconectar")
             createButton(start_game_button_x, "Iniciar Partida")
+            #Texto
+            font = pygame.font.Font(None, 36)     
+            if(myturn):      
+                text = font.render("Es tu turno", True, BLACK)
+            else:
+                text = font.render("Esperando Ataque enemigo", True, BLACK)
+            text_rect = text.get_rect()
+            text_rect.centerx = SCREEEN.get_rect().centerx
+            text_rect.bottom = ALTO - 120
+            SCREEEN.blit(text, text_rect)
+             
             pygame.display.flip()
+
             cont += 1
         if win:
-            gameOver(client_socket, "Ganaste")
+            gameOver(client_socket, "Ganaste", thread)
+            # thread.join()
+
         else:
-            gameOver(client_socket, "Perdiste")
+            gameOver(client_socket, "Perdiste", thread)
+            # thread.join()
+
 if __name__ == "__main__":
     main()
